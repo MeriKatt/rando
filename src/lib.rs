@@ -4,14 +4,13 @@ mod io;
 mod logic;
 mod map;
 mod writing;
-
+mod tricks;
 type Asset<T> = unreal_asset::Asset<std::io::Cursor<T>>;
-
 pub struct Rando {
     notifs: egui_modal::Modal,
     credits: egui_modal::Modal,
     faq: egui_modal::Modal,
-    tricks: egui_modal::Modal,
+    tricks_modal: egui_modal::Modal,
     pak: std::path::PathBuf,
     pak_str: String,
     abilities: bool,
@@ -25,6 +24,7 @@ pub struct Rando {
     chairs: bool,
     split_cling: bool,
     spawn: bool,
+    tricks: tricks::Tricks
 }
 
 impl Rando {
@@ -36,6 +36,15 @@ impl Rando {
                         .get_string(key)
                         .unwrap_or_default()
                         .parse()
+                        .unwrap_or_default()
+                })
+                .unwrap_or_default()
+        };
+        let get_string = |key: &str| -> String {
+            ctx.storage
+                .map(|storage| {
+                    storage
+                        .get_string(key)
                         .unwrap_or_default()
                 })
                 .unwrap_or_default()
@@ -68,12 +77,21 @@ impl Rando {
             },
         };
         let pak_str = get_pak_str(&pak);
+        let tricks_ = tricks::Tricks {
+            momentum: tricks::Difficulty::from_st(get_string("momentum")),
+            one_wall: tricks::Difficulty::from_st(get_string("one_wall")),
+            reverse_kick: tricks::Difficulty::from_st(get_string("reverse_kick")), 
+            sunsetter_abuse: tricks::Difficulty::from_st(get_string("sunsetter_abuse")), 
+            pogo_abuse: tricks::Difficulty::from_st(get_string("pogo_abuse")), 
+            movement: tricks::Difficulty::from_st(get_string("movement")),
+            cling_abuse: tricks::Difficulty::from_st(get_string("cling_abuse"))
+        };
 
         Self {
             notifs,
             credits: egui_modal::Modal::new(&ctx.egui_ctx, "credits"),
             faq: egui_modal::Modal::new(&ctx.egui_ctx, "faq"),
-            tricks: egui_modal::Modal::new(&ctx.egui_ctx, "trick"),
+            tricks_modal: egui_modal::Modal::new(&ctx.egui_ctx, "trick"),
             pak,
             pak_str,
             abilities: get_bool("abilities"),
@@ -87,6 +105,7 @@ impl Rando {
             chairs: get_bool("chairs"),
             split_cling: get_bool("split cling"),
             spawn: get_bool("spawn"),
+            tricks: tricks_
         }
     }
     fn pak(&self) -> Result<std::io::BufReader<std::fs::File>, std::io::Error> {
@@ -240,14 +259,60 @@ impl eframe::App for Rando {
                     .button(egui::RichText::new("trick settings").size(25.0))
                     .clicked()
                 {
-                    self.tricks.open()
+                    self.tricks_modal.open()
                 }
-                self.tricks.show(|ui| {
+
+
+                self.tricks_modal.show(|ui| {
+                    use tricks::Difficulty;
+                    let selectable_values = [Difficulty::Disabled, Difficulty::Normal, Difficulty::Advanced, Difficulty::Expert, Difficulty::Insane];
+                    egui::ComboBox::from_label("Momentum Conservation").selected_text(format!("{:?}", self.tricks.momentum))
+                        .show_ui(ui, |ui| {
+                            for diff in &selectable_values {
+                                ui.selectable_value(&mut self.tricks.momentum, *diff, diff.to_string());
+                            }
+                        });
+                    egui::ComboBox::from_label("Single Wall Wall-kick").selected_text(format!("{:?}", self.tricks.one_wall))
+                        .show_ui(ui, |ui| {
+                            for diff in &selectable_values {
+                                ui.selectable_value(&mut self.tricks.one_wall, *diff, diff.to_string());
+                            }
+                        });
+                    egui::ComboBox::from_label("Reverse Wall-kick").selected_text(format!("{:?}", self.tricks.reverse_kick))
+                        .show_ui(ui, |ui| {
+                            for diff in &selectable_values {
+                                ui.selectable_value(&mut self.tricks.reverse_kick, *diff, diff.to_string());
+                            }
+                        });
+                    egui::ComboBox::from_label("Sunsetter Backflip abuse").selected_text(format!("{:?}", self.tricks.sunsetter_abuse))
+                        .show_ui(ui, |ui| {
+                            for diff in &selectable_values {
+                                ui.selectable_value(&mut self.tricks.sunsetter_abuse, *diff, diff.to_string());
+                            }
+                        });
+                    egui::ComboBox::from_label("Ascendant Light Abuse").selected_text(format!("{:?}", self.tricks.pogo_abuse))
+                        .show_ui(ui, |ui| {
+                            for diff in &selectable_values {
+                                ui.selectable_value(&mut self.tricks.pogo_abuse, *diff, diff.to_string());
+                            }
+                        });
+                    egui::ComboBox::from_label("Movement").selected_text(format!("{:?}", self.tricks.movement))
+                        .show_ui(ui, |ui| {
+                            for diff in &selectable_values {
+                                ui.selectable_value(&mut self.tricks.movement, *diff, diff.to_string());
+                            }
+                        });
+                    egui::ComboBox::from_label("Cling Abuse").selected_text(format!("{:?}", self.tricks.cling_abuse))
+                        .show_ui(ui, |ui| {
+                            for diff in &selectable_values {
+                                ui.selectable_value(&mut self.tricks.cling_abuse, *diff, diff.to_string());
+                            }
+                        });
                     ui.with_layout(
                         egui::Layout::default()
                             .with_cross_justify(true)
                             .with_cross_align(egui::Align::Center),
-                        |ui| self.tricks.button(ui, "close"),
+                        |ui| self.tricks_modal.button(ui, "close"),
                     );
                 });
                 if ui.button("uninstall seed").clicked() {
@@ -301,5 +366,13 @@ impl eframe::App for Rando {
         storage.set_string("chairs", self.chairs.to_string());
         storage.set_string("split cling", self.split_cling.to_string());
         storage.set_string("spawn", self.spawn.to_string());
+        //Trick Difficulties
+        storage.set_string("momentum", self.tricks.momentum.to_string());
+        storage.set_string("one_wall", self.tricks.one_wall.to_string());
+        storage.set_string("reverse_kick", self.tricks.reverse_kick.to_string());
+        storage.set_string("sunsetter_abuse", self.tricks.sunsetter_abuse.to_string());
+        storage.set_string("pogo_abuse", self.tricks.pogo_abuse.to_string());
+        storage.set_string("movement", self.tricks.movement.to_string());
+        storage.set_string("cling_abuse", self.tricks.cling_abuse.to_string());
     }
 }

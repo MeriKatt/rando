@@ -54,11 +54,14 @@ impl std::fmt::Debug for Check {
     }
 }
 
+use crate::tricks::{Trick, Difficulty};
+
 #[derive(Debug, Clone, Copy)]
 pub enum Lock {
     None,
     Any(&'static [Lock]),
     All(&'static [Lock]),
+    Trick(Trick, Difficulty),
     Location(Location),
     Movement(Ability),
     SmallKey,
