@@ -8,6 +8,8 @@ mod locations;
 pub use locations::Location;
 mod spawns;
 pub use spawns::SPAWNS;
+mod tricks;
+pub use tricks::*;
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum Drop {
@@ -59,6 +61,7 @@ pub enum Lock {
     None,
     Any(&'static [Lock]),
     All(&'static [Lock]),
+    Trick(Trick, Difficulty),
     Location(Location),
     Movement(Ability),
     SmallKey,

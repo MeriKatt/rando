@@ -64,8 +64,10 @@ pub enum Location {
 }
 
 use Ability as A;
+use Difficulty as D;
 use Location as L;
-use Lock::{All, Any, Location as Loc, Movement as Powerup};
+use Lock::{All, Any, Location as Loc, Movement as Powerup, Trick};
+use crate::logic::Trick as T;
 impl Location {
     // need to include some reverse directions
     pub const fn locks(&self) -> Lock {
@@ -87,7 +89,7 @@ impl Location {
                 ]),
             ]),
             L::PEntryUnderBelly => Any(&[
-                Any(&[Loc(L::LatePrison), Powerup(A::DreamBreaker)]),
+                All(&[Loc(L::LatePrison), Powerup(A::DreamBreaker)]), // Late prison requires dreambreaker for the wall. Dont know why this was a any before.
                 All(&[Loc(L::PrisonHole), Powerup(A::AscendantLight)]),
             ]),
             L::VDreamBreaker => Loc(L::EarlyPrison),
@@ -103,28 +105,40 @@ impl Location {
                 Loc(L::ThDungeonEntry),
                 All(&[
                     Loc(L::LatePrison),
+                    Powerup(A::DreamBreaker), // For the wall.
                     Any(&[
                         Powerup(A::ClingGem(6)),
                         Powerup(A::SunGreaves),
                         Powerup(A::AscendantLight),
-                    ]),
+                    ]), // Getting up where the ORB is at.
                 ]),
             ]),
             // Castle Sansa
-            L::CsPrisonEntry => Any(&[Loc(L::CsMain), Loc(L::PEntryCastle)]),
+            L::CsPrisonEntry => Any(&[Loc(L::CsMain), Loc(L::PEntryCastle)]), // Can enter from either w/ nothing.
             L::CsLibraryEntry => Any(&[
                 Loc(L::MainLibrary),
-                All(&[Loc(L::CsMain), Powerup(A::DreamBreaker)]),
+                All(&[Loc(L::CsMain), Powerup(A::DreamBreaker)]), // Should i add movement to this? After all you need to either enter from above or do backflip to reach lever.
             ]),
             L::CsTheatreEntryNearPrison => Any(&[
                 Loc(L::PillarRoom),
                 All(&[
                     Loc(L::CsMain),
                     Any(&[
-                        Powerup(A::SunGreaves),
-                        Powerup(A::Sunsetter),
-                        Powerup(A::ClingGem(4)),
-                        All(&[Powerup(A::Slide), Powerup(A::SolarWind)]),
+                        All(&[
+                            Powerup(A::Slide),
+                            Trick(T::Movement, D::Advanced),
+                            Trick(T::Momentum, D::Advanced),
+                        ]),
+                        All(&[Powerup(A::Sunsetter), Powerup(A::SunGreaves)]),
+                        All(&[Powerup(A::HeliacalPower), Powerup(A::SolarWind)]), // This is using the little block stair case thing to get up
+                        All(&[Powerup(A::SunGreaves), Trick(T::Movement, D::Normal)]),
+                        All(&[Powerup(A::Sunsetter), Trick(T::Movement, D::Advanced)]),
+                        All(&[Powerup(A::ClingGem(4)), Trick(T::ClingAbuse, D::Normal)]),
+                        All(&[
+                            Powerup(A::Slide),
+                            Powerup(A::SolarWind),
+                            Trick(T::Movement, D::Normal),
+                        ]),
                     ]),
                 ]),
             ]),
@@ -132,8 +146,18 @@ impl Location {
                 All(&[Loc(L::CsMain), Powerup(A::ClingGem(2))]),
                 All(&[
                     Loc(L::CsTheatreEntrance),
-                    Powerup(A::Slide),
-                    Any(&[Powerup(A::HeliacalPower), Powerup(A::SolarWind)]),
+                    Any(&[
+                        All(&[
+                            Powerup(A::SolarWind),
+                            Powerup(A::HeliacalPower),
+                            Trick(T::Movement, D::Normal),
+                        ]),
+                        All(&[
+                            Powerup(A::Slide),
+                            Powerup(A::ClingGem(2)),
+                            Trick(T::Movement, D::Advanced),
+                        ]),
+                    ]),
                 ]),
             ]),
             L::CsKeepClimbEntrance => All(&[Loc(L::CsMain), Lock::SmallKey]),
@@ -143,7 +167,7 @@ impl Location {
                     Loc(L::CsMain),
                     Any(&[
                         Powerup(A::DreamBreaker),
-                        Powerup(A::ClingGem(4)),
+                        Trick(T::Movement, D::Normal),
                         Powerup(A::SunGreaves),
                         Powerup(A::Sunsetter),
                     ]),
